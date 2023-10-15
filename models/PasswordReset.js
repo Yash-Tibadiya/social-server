@@ -1,4 +1,5 @@
-import mongoose, {Schema} from "mongoose";
+//done
+import mongoose, { Schema } from "mongoose";
 
 const passwordResetSchema = Schema(
     {
@@ -7,9 +8,7 @@ const passwordResetSchema = Schema(
         token: String,
         createdAt: Date,
         expiresAt: Date,
-    },
-    { timestamps: true }
-)
+    })
 
 const PasswordReset = mongoose.model("PasswordReset", passwordResetSchema);
 

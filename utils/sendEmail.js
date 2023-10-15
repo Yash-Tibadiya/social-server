@@ -1,99 +1,134 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+import { v4 as uuidv4 } from "uuid"; 
+import { hashString } from "./index.js";
+import Verification from "../models/emailVerification.js";
+import PasswordReset from "../models/PasswordReset.js";
+
 dotenv.config();
-import  Verification from '../models/emailVerification.js';
-import PasswordReset from '../models/PasswordReset.js';
-import { hashString } from './index.js';
 
-import { v4 as uuidv4 } from 'uuid';
+const { AUTH_EMAIL, AUTH_PASSWORD, APP_URL} = process.env;
 
-const { AUTH_EMAIL, AUTH_PASSWORD, APP_URL } = process.env;
-
-let transporter = nodemailer.createTransport({
-    service: "smtp-mail.outlook.com",
-    auth : {
+let transporter = nodemailer.createTransport({ 
+    host: "smtp-mail.outlook.com",
+    auth: {
         user: AUTH_EMAIL,
-        pass: AUTH_PASSWORD
+        pass: AUTH_PASSWORD,
     },
-    secure: true, 
-    tls: {
-        rejectUnauthorized: false
-    }
-})
-
+});
 
 export const sendVerificationEmail = async (user, res) => {
-    const { _id, email, lastName } = user;
+    const {_id, email, lastName} = user;
 
     const token = _id + uuidv4();
-    
-    const link = APP_URL + '/users/verify/' + _id + '/' + token;
 
+    const link = APP_URL + "users/verify/" + _id + "/" + token;
+
+    //mail options
     const mailOptions = {
         from: AUTH_EMAIL,
         to: email,
-        subject: 'Email Verification',
-        html: `<div><h1>Hi ${lastName}</h1>
-        <p>Click the link below to verify your email address</p>
-        <a href=${link}>${link}</a>
-        </div>`
+        subject: "Email Verification",
+        html: `<div
+        style='font-family: Arial, sans-serif; font-size: 20px; color: #333; background-color:#fff'>
+        <h1 style="color : rgb(8,56,188)">Please veify your email address</h1>
+        <hr>
+        <h4>Hi ${lastName},<h4>
+        <p>
+            Please verify your email address so we can know that it's really you.
+            <br>
+        <p>This link <b>expires in 1 hour</b></p>
+        <br>
+        <a href=${link}
+        style="color: #fff; padding: 14px; text-decoration: none; background-color: #000;">
+         Verify Email Address </a>
+        </p>
+        <div style="margin-top: 20px;">
+        <h5>Best Regards</h5>
+        <h5>Strings </h5>
+        </div>
+        </div>`,
     }
 
-    try{
-        const hasedToken = await hashString(token);
+    try {
+        const hashedToken = await hashString(token);
+
         const newVerifiedEmail = await Verification.create({
             userId: _id,
-            token: hasedToken,
+            token: hashedToken,
             createdAt: Date.now(),
-            expiresAt: Date.now() + 3600000
-        })
-        if(newVerifiedEmail){
-            transporter.sendMail(mailOptions).then(() => {
-                res.status(201).send({success: "PENDING", message: 'Verification email sent'})
-            }).catch((error) => {
-                console.log(error)
-                res.status(404).json({error: error.message})
+            expiresAt: Date.now() + 3600000,
+        });
+        if(newVerifiedEmail) {
+            transporter
+            .sendMail(mailOptions)
+            .then(() => {
+                res.status(201).send({
+                    success: "PENDING",
+                    message:
+                    "Verification email has been sent to your account. Check your email for verification"
+                });
             })
+            .catch((err) => {
+                console.log(err);
+                res.status(404).json({message: "Something went wrong"});
+            });
         }
-    }catch(error){
-        console.log(error)
-        res.status(400).json({message: error.message})
+
+    } catch (error) {
+        console.log(error);
+        res.status(404).json({ message: "Something went wrong "})
     }
-}
+
+};
 
 export const resetPasswordLink = async (user, res) => {
-    const { _id, email } = user;
-    console.log("_id :", _id + " " + "email:", email);
+    const {_id, email} = user;
+
     const token = _id + uuidv4();
-    const link = APP_URL + '/users/reset-password/' + _id + '/' + token;
+    const link = APP_URL + "users/reset-password/" + _id + "/" + token;
+
+
+    //mail options
     const mailOptions = {
         from: AUTH_EMAIL,
         to: email,
-        subject: 'Password Reset',
-        html: `<h1>Hi ${email}</h1>
-        <p>Click the link below to verify your email address</p>
-        <a href=${link}>${link}</a>`
-    }
+        subject: "Password Reset",
+        html:`<p style='font-family: Arial, sans-serif; font-size: 20px; color: #333; background-color:#fff'>
+            Password reset link. Please click the link below to reset password.
+            <br>
+            <p style="font-size: 18px;"><b>this link expires in 10 minutes</b></p>
+            <br>
+            <a href=${link} sytle="color: #fff; padding: 10px; text-decoration: none; background-color:"#000"> ${link} </a>
+        </p>`,
+    };
 
     try{
-        const hasedToken = await hashString(token);
-        const resetPassword = await PasswordReset.create({
+        const hashedToken = await hashString(token);
+        const resetEmail = await PasswordReset.create({
             userId: _id,
             email: email,
-            token: hasedToken,
+            token: hashedToken,
             createdAt: Date.now(),
-            expiresAt: Date.now() + 600000
-        })
-        if(resetPassword){
-            transporter.sendMail(mailOptions).then(() => {
-                res.status(201).send({success: "PENDING", message: 'Verification link to reset password is sent!!!'})
-            }).catch((error) => {
-                console.log(error)
-                res.status(404).json({error: "There was an error sending the email"})
+            expiresAt: Date.now() + 600000,
+        });
+
+        if(resetEmail){
+            transporter
+            .sendMail(mailOptions)
+            .then(() => {
+                res.status(201).send({
+                    success: "PENDING",
+                    message: "Reset Password Link has been set to your account.",
+                });
             })
+            .catch((err) => {
+                console.log(err);
+                res.status(404).json({ message: "Something went wrong"});
+            });
         }
-    }catch(error){
-        console.log(error)
-        res.status(400).json({message: "Something went wrong"})
+    } catch (error) {
+        console.log(error);
+        res.status(404).json({message: "Something went wrong"});
     }
 }

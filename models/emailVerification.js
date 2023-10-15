@@ -1,4 +1,5 @@
-import mongoose, {Schema} from "mongoose";
+//done
+import mongoose, { Schema } from "mongoose";
 
 const emailVerificationSchema = Schema(
     {
@@ -7,7 +8,6 @@ const emailVerificationSchema = Schema(
         createdAt: Date,
         expiresAt: Date,
     },
-    { timestamps: true }
 )
 
 const Verification = mongoose.model("Verification", emailVerificationSchema);

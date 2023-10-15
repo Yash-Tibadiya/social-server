@@ -1,5 +1,7 @@
-import mongoose, {Schema} from "mongoose";
+//done
+import mongoose, { Schema } from "mongoose";
 
+//schema
 const userSchema = new mongoose.Schema(
     {
         firstName: {
@@ -20,7 +22,7 @@ const userSchema = new mongoose.Schema(
             required: [true, "Password is required!"],
             minlength: [6, "Password must be at least 6 characters long!"],
             // select: true means that the password will be returned when we query for users
-            select: true
+            select: true,
         },
         location: {
             type: String,
